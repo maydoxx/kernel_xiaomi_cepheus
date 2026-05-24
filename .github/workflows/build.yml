@@ -12,60 +12,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # STEP 1: Standard checkout WITHOUT using broken Git submodules
+      - uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
+      # STEP 2: Manually clone AnyKernel3 (Fixes the Exit Code 128 error)
       - name: Setup AnyKernel3
         run: |
           cd $GITHUB_WORKSPACE
+          # Remove the broken submodule reference if it exists as a folder
           rm -rf AnyKernel3
+          # Fresh clone of the AnyKernel3 toolset
           git clone https://github.com/osm0sis/AnyKernel3.git AnyKernel3
 
+      # STEP 3: Clone KernelSU-Next into the root folder where the symlink points
       - name: Setup KernelSU-Next
         run: |
           cd $GITHUB_WORKSPACE
+          # Clean up any residual folder named KernelSU-Next in the root
           rm -rf KernelSU-Next
+          
+          # Clone KernelSU-Next recursively right into the root directory
           git clone --recursive https://github.com/rifsxd/KernelSU-Next KernelSU-Next
+          
+          # Quick sanity check: Force recreate the symlink just in case it was damaged
           rm -f drivers/kernelsu
           ln -s ../KernelSU-Next/kernel drivers/kernelsu
-
+          
+      # STEP 4: Install toolchains & build essentials
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential flex libssl-dev libcrypto++-dev lz4 liblz4-tool ncurses-dev tcl vital-utils zip
+          sudo apt-get install -y clang lld llvm libssl-dev bison flex make zip
 
-      # FIX: Recreate raystef66's exact environment tree so build.sh works completely unmodified
-      - name: Setup Raystef66 Fake Toolchain Environment
-        run: |
-          # 1. Create the base folders exactly matching the script paths
-          sudo mkdir -p /home/raystef66/kernel/prebuilts/clang-r416183b1
-          sudo mkdir -p /home/raystef66/kernel/prebuilts/aarch64/bin
-          sudo mkdir -p /home/raystef66/kernel/prebuilts/arm/bin
-          sudo chown -R runner:runner /home/raystef66
-
-          # 2. Download AOSP Clang 12 (r416183b1) and extract into the fake path
-          curl -Lo clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android12-release/clang-r416183b.tar.gz
-          tar -C /home/raystef66/kernel/prebuilts/clang-r416183b1 -xzf clang.tar.gz
-          rm clang.tar.gz
-
-          # 3. Create structural symlinks for cross-compiling target binaries if missing
-          # (AOSP Clang bundles LLVM utilities inside its own bin folder)
-          ln -s /home/raystef66/kernel/prebuilts/clang-r416183b1/bin/llvm-ar /home/raystef66/kernel/prebuilts/aarch64/bin/aarch64-linux-gnu-ar || true
-          ln -s /home/raystef66/kernel/prebuilts/clang-r416183b1/bin/ld.lld /home/raystef66/kernel/prebuilts/aarch64/bin/aarch64-linux-gnu-ld || true
-
+      # STEP 5: Run your custom compilation script
       - name: Build
         run: |
-          # Create a dummy script mock for makeparallel if build.sh requires it locally
-          if [ ! -f "./makeparallel" ]; then
-            echo '#!/bin/bash' > ./makeparallel
-            echo 'make "$@"' >> ./makeparallel
-            chmod +x ./makeparallel
-          fi
-
           bash ./build.sh
 
-      # Fix: Grab the finished zip package from the fake raystef66 directory
+      # STEP 6: Package and upload the release
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -73,4 +59,4 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: false
           files: |
-            /home/raystef66/kernel/*.zip
+            out/*.zip

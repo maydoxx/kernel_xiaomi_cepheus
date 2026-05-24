@@ -13,6 +13,10 @@ export CROSS_COMPILE_ARM32=arm-linux-androideabi-
 export CC=clang
 export CLANG_TRIPLE=aarch64-linux-gnu-
 
+# Force host compilation flags to explicitly link libyaml
+export HOSTCFLAGS="-I/usr/include"
+export HOSTLDFLAGS="-L/usr/lib/x86_64-linux-gnu -lyaml"
+
 # Ensure output workspace folder is fresh
 rm -rf out
 mkdir -p out

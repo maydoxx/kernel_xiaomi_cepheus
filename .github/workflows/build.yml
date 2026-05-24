@@ -55,6 +55,8 @@ jobs:
       - name: Build
         run: |
           export PATH="$GITHUB_WORKSPACE/clang-aosp/bin:$GITHUB_WORKSPACE/gcc-64/bin:$GITHUB_WORKSPACE/gcc-32/bin:$PATH"
+          export HOSTCFLAGS="-I/usr/include"
+          export HOSTLDFLAGS="-L/usr/lib/x86_64-linux-gnu -lyaml"
           bash ./build.sh
 
       - name: Release

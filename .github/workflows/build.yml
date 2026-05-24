@@ -26,13 +26,20 @@ jobs:
           # Fresh clone of the AnyKernel3 toolset
           git clone https://github.com/osm0sis/AnyKernel3.git AnyKernel3
 
-      # STEP 3: Fetch KernelSU-Next recursively
+      # STEP 3: Clone KernelSU-Next into the root folder where the symlink points
       - name: Setup KernelSU-Next
         run: |
           cd $GITHUB_WORKSPACE
-          git clone --recursive https://github.com/rifsxd/KernelSU-Next drivers/kernelsu
-          grep -q "kernelsu" drivers/Makefile || echo "obj-y += kernelsu/" >> drivers/Makefile
-
+          # Clean up any residual folder named KernelSU-Next in the root
+          rm -rf KernelSU-Next
+          
+          # Clone KernelSU-Next recursively right into the root directory
+          git clone --recursive https://github.com/rifsxd/KernelSU-Next KernelSU-Next
+          
+          # Quick sanity check: Force recreate the symlink just in case it was damaged
+          rm -f drivers/kernelsu
+          ln -s ../KernelSU-Next/kernel drivers/kernelsu
+          
       # STEP 4: Install toolchains & build essentials
       - name: Install Build Dependencies
         run: |

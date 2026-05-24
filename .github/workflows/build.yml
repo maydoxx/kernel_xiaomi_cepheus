@@ -30,7 +30,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential flex libssl-dev libcrypto++-dev lz4 liblz4-tool ncurses-dev tcl zip
+          sudo apt-get install -y bc bison build-essential flex libssl-dev libcrypto++-dev lz4 liblz4-tool ncurses-dev tcl zip libyaml-dev
 
       # Fetch both Clang AND the required GCC/Binutils toolchains
       - name: Fetch Toolchains

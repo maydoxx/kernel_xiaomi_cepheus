@@ -14,6 +14,7 @@ export CC=clang
 export CLANG_TRIPLE=aarch64-linux-gnu-
 
 # Ensure output workspace folder is fresh
+rm -rf out
 mkdir -p out
 
 echo "**** Generating defconfig ****"

@@ -22,7 +22,10 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+        
       - name: Install LLVM and Clang
         run: |
           sudo apt-get update

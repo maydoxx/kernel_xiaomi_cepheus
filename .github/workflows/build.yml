@@ -1,40 +1,50 @@
 # This is a basic workflow to help you get started with Actions
 name: build
 
-# Controls when the action will run.
 on:
-  # Triggers the workflow on push events but only for the eleven branch
   push:
     tags:
       - "*"
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # STEP 1: Standard checkout WITHOUT using broken Git submodules
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
           fetch-depth: 0
-        
-      - name: Install LLVM and Clang
+
+      # STEP 2: Manually clone AnyKernel3 (Fixes the Exit Code 128 error)
+      - name: Setup AnyKernel3
+        run: |
+          cd $GITHUB_WORKSPACE
+          # Remove the broken submodule reference if it exists as a folder
+          rm -rf AnyKernel3
+          # Fresh clone of the AnyKernel3 toolset
+          git clone https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+
+      # STEP 3: Fetch KernelSU-Next recursively
+      - name: Setup KernelSU-Next
+        run: |
+          cd $GITHUB_WORKSPACE
+          git clone --recursive https://github.com/rifsxd/KernelSU-Next drivers/kernelsu
+          grep -q "kernelsu" drivers/Makefile || echo "obj-y += kernelsu/" >> drivers/Makefile
+
+      # STEP 4: Install toolchains & build essentials
+      - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang lld llvm
-          
+          sudo apt-get install -y clang lld llvm libssl-dev bison flex make zip
+
+      # STEP 5: Run your custom compilation script
       - name: Build
         run: |
           bash ./build.sh
 
+      # STEP 6: Package and upload the release
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
